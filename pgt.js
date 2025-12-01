@@ -48,18 +48,26 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-var options = { 
-    key: fs.readFileSync('pagtesouro.key'), 
-    cert: fs.readFileSync('pagtesouro.pem') 
-}; 
+var options = {
+    key: fs.readFileSync('pagtesouro.key'),
+    cert: fs.readFileSync('pagtesouro.pem')
+};
 
-var corsOptions = { 
+var corsOptions = {
   origin: false
 }
 
 
+/**
+ * Registra mensagens com carimbo de data e hora para facilitar auditoria e depuração.
+ *
+ * @param {string} texto - Texto a ser registrado no console.
+ * @returns {void}
+ * @example
+ * geralog('Servidor iniciado');
+ */
 function geralog(texto) {
-	console.log(new Date().toLocaleString() + " - " + texto);	
+        console.log(new Date().toLocaleString() + " - " + texto);
 }
 
 
@@ -72,11 +80,23 @@ function geralog(texto) {
 	ender = prd_ender;
 	aut = hmg_proxy_aut;
 
-	var tokenAcesso = "#"; 	
-	var tokenAcessoCCCPM = "#";
-	var tokenAcessoCCCPM2 = "#";			
-	var tokenAcessoPAPEM = "#";
+var tokenAcesso = "#";
+        var tokenAcessoCCCPM = "#";
+        var tokenAcessoCCCPM2 = "#";
+        var tokenAcessoPAPEM = "#";
 
+/**
+ * Endpoint responsável por receber os dados brutos de geração da GRU,
+ * calcular o código de referência, registrar no banco e solicitar a criação
+ * do pagamento no PagTesouro.
+ *
+ * @param {express.Request} request - Requisição HTTP contendo o corpo com os dados da GRU.
+ * @param {express.Response} response - Resposta HTTP enviada ao consumidor da API.
+ * @returns {void}
+ * @example
+ * // Envio de GRU com curl
+ * // curl -X POST https://localhost:3000/handle -H "Content-Type: application/json" -d '{"cnpjCpf":"12345678901","cat":"CCIM"}'
+ */
 app.post('/handle', cors(corsOptions), (request,response) => {
 
     geralog(" Dados para GRU Recebidos!");
@@ -84,15 +104,24 @@ app.post('/handle', cors(corsOptions), (request,response) => {
     console.log(request.body);
     geralog("======= FIM DOS DADOS ORIGINAIS ========");
 
-	var value = request.body;
-	var ug = "";
+        var value = request.body;
+        var ug = "";
 	
 	
-	var cd_ref_seq;
-	var cd_referencia;
+        var cd_ref_seq;
+        var cd_referencia;
 
-		function montaref(result) {
-			//montagem do codigo de referencia da GRU
+                /**
+                 * Monta o código de referência numérico da GRU considerando a sequência
+                 * para o contribuinte e possíveis ajustes por categoria.
+                 *
+                 * @param {number} result - Sequencial retornado do banco que será incrementado.
+                 * @returns {void}
+                 * @example
+                 * montaref(3); // ajusta value.referencia com padding e dados da UG
+                 */
+                function montaref(result) {
+                        //montagem do codigo de referencia da GRU
 				cd_referencia = result.toString();
 				while (cd_referencia.length < 4) cd_referencia = "0" + cd_referencia;				
 				
@@ -163,7 +192,16 @@ app.post('/handle', cors(corsOptions), (request,response) => {
 			} catch (error) { console.log (error) }
 			
 			
-			function enviapost(){
+                        /**
+                         * Envia os dados já preparados ao PagTesouro e aciona o registro no banco.
+                         * Responsável por escolher o token correto de acordo com a categoria e
+                         * invocar o fluxo assíncrono de criação da GRU.
+                         *
+                         * @returns {void}
+                         * @example
+                         * enviapost();
+                         */
+                        function enviapost(){
 					
 					geralog(" Dados para GRU Recebidos!");
 					geralog("======= INÍCIO DOS DADOS A ENVIAR ========");
@@ -188,8 +226,17 @@ app.post('/handle', cors(corsOptions), (request,response) => {
 					geralog(" Emitindo POST-REQUEST para " + ender  + 'solicitacao-pagamento');
 					cont = cont + 1;	
 					
-					//SEGUNDO BLOCO AYNC
-					const sendPost = async () => {
+                                        //SEGUNDO BLOCO AYNC
+                                        /**
+                                         * Chama o serviço de criação de pagamento do PagTesouro
+                                         * e grava o retorno no banco de dados. Em caso de erro,
+                                         * formata e devolve uma resposta amigável ao consumidor.
+                                         *
+                                         * @returns {Promise<void>}
+                                         * @example
+                                         * await sendPost();
+                                         */
+                                        const sendPost = async () => {
 					try {
 						
 						const response2 = await axios.post(ender + 'solicitacao-pagamento', value , options);
@@ -271,10 +318,21 @@ app.post('/handle', cors(corsOptions), (request,response) => {
 });
 
 
+/**
+ * Endpoint responsável por consultar o PagTesouro para um idPagamento
+ * específico e refletir o status no banco de dados, disparando integrações
+ * adicionais quando necessário.
+ *
+ * @param {express.Request} request - Requisição contendo o id_pgto e dados complementares.
+ * @param {express.Response} response - Resposta HTTP com o status da operação.
+ * @returns {void}
+ * @example
+ * // curl -X POST https://localhost:3000/update -H "Content-Type: application/json" -d '{"id_pgto":"123","cat_servico":"CCIM"}'
+ */
 app.post('/update', cors(corsOptions),(request,response) => {
-	
-	geralog("Solicitação Recebida! Atualizar idPagamento : " + request.body.id_pgto);
-	console.log(request.body);
+
+        geralog("Solicitação Recebida! Atualizar idPagamento : " + request.body.id_pgto);
+        console.log(request.body);
 	
 	token = tokenAcesso;
 	if (request.body.cat_servico == "CCCPM") token = tokenAcessoCCCPM;
@@ -295,8 +353,17 @@ app.post('/update', cors(corsOptions),(request,response) => {
 	
 	geralog(" Emitindo GET REQUEST para " + ender + 'pagamentos/'+ request.body.id_pgto);
 
-	//PRIMEIRO BLOCO AYNC
-	const sendPost = async () => {
+        //PRIMEIRO BLOCO AYNC
+        /**
+         * Consulta o PagTesouro para obter o status atualizado do pagamento
+         * e persiste o resultado no banco. Quando o pagamento é concluído,
+         * também aciona a integração SINGRA para sincronização.
+         *
+         * @returns {Promise<void>}
+         * @example
+         * await sendPost();
+         */
+        const sendPost = async () => {
 	
 	const { Pool } = require('pg')								
 	const pool = new Pool({
