@@ -5,6 +5,8 @@ const axios = require("axios-https-proxy-fix");
 var rootCas = require('ssl-root-cas').create();
 const fs = require('fs');
 const https = require('https');
+const crypto = require('crypto');
+const { Pool } = require('pg');
 var cont = 0;
 const router = express.Router();
 var cors = require('cors');
@@ -48,22 +50,59 @@ app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-var options = { 
-    key: fs.readFileSync('pagtesouro.key'), 
-    cert: fs.readFileSync('pagtesouro.pem') 
-}; 
+var options = {
+    key: fs.readFileSync('pagtesouro.key'),
+    cert: fs.readFileSync('pagtesouro.pem')
+};
 
-var corsOptions = { 
+var corsOptions = {
   origin: false
 }
 
+const AUTH_TOKEN = process.env.API_TOKEN || process.env.BEARER_TOKEN || '#';
+
+const dbConfig = {
+  user: '#',
+  host: '#',
+  database: '#',
+  schema: '#',
+  password: '#',
+  port: 111111
+};
+
 
 function geralog(texto) {
-	console.log(new Date().toLocaleString() + " - " + texto);	
+        console.log(new Date().toLocaleString() + " - " + texto);
+}
+
+function authenticateRequest(req, res, next) {
+        const authHeader = req.headers['authorization'] || '';
+        const apiKey = req.headers['x-api-key'] || '';
+        const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+
+        if (bearerToken && bearerToken === AUTH_TOKEN) {
+                return next();
+        }
+
+        if (apiKey && apiKey === AUTH_TOKEN) {
+                return next();
+        }
+
+        geralog('Tentativa de acesso não autorizada.');
+        return res.status(401).json({ erro: 'Não autorizado' });
+}
+
+function decryptField(value) {
+        const key = Buffer.from("#", 'utf8');
+        const iv = Buffer.from('#', 'utf8');
+        const decipher = crypto.createDecipheriv('#', key, iv);
+        let decrypted = decipher.update(value, 'base64', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
 }
 
 
-//CONFIGURAÇÃO DOS AMBIENTES	
+//CONFIGURAÇÃO DOS AMBIENTES
 	var hmg_ender = 'https://valpagtesouro.tesouro.gov.br/api/gru/'; 
 	var hmg_proxy_aut = 'Basic MTU2NTgxMTk3NjY6QXBsaWNhc2lwbGEyMDIxQA==';
 	var prd_ender = 'https://pagtesouro.tesouro.gov.br/api/gru/';
@@ -73,9 +112,54 @@ function geralog(texto) {
 	aut = hmg_proxy_aut;
 
 	var tokenAcesso = "#"; 	
-	var tokenAcessoCCCPM = "#";
-	var tokenAcessoCCCPM2 = "#";			
-	var tokenAcessoPAPEM = "#";
+        var tokenAcessoCCCPM = "#";
+        var tokenAcessoCCCPM2 = "#";
+        var tokenAcessoPAPEM = "#";
+
+app.get('/payments/:id', cors(corsOptions), authenticateRequest, async (request, response) => {
+
+        const idPagamento = request.params.id;
+        geralog(`Solicitação autenticada para consulta do pagamento ${idPagamento}`);
+
+        const pool = new Pool(dbConfig);
+
+        try {
+                const query = "SELECT * FROM pagtesouro.tb_pgto WHERE id_pgto = $1";
+                const values = [idPagamento];
+                const result = await pool.query(query, values);
+
+                if (result.rowCount === 0) {
+                        geralog(`Pagamento ${idPagamento} não encontrado.`);
+                        return response.status(404).json({ erro: 'Pagamento não encontrado' });
+                }
+
+                const row = result.rows[0];
+                let nomeDecifrado;
+                let cpfDecifrado;
+
+                try {
+                        nomeDecifrado = decryptField(row.nome);
+                        cpfDecifrado = decryptField(row.cd_cpf);
+                } catch (error) {
+                        geralog(`Erro ao decifrar dados para pagamento ${idPagamento}: ${error}`);
+                        return response.status(500).json({ erro: 'Erro ao decifrar dados sensíveis' });
+                }
+
+                const pagamento = {
+                        ...row,
+                        nome: nomeDecifrado,
+                        cd_cpf: cpfDecifrado
+                };
+
+                geralog(`Dados do pagamento ${idPagamento} retornados com sucesso.`);
+                return response.json(pagamento);
+        } catch (error) {
+                geralog(`Erro ao consultar pagamento ${idPagamento}: ${error}`);
+                return response.status(500).json({ erro: 'Erro ao consultar pagamento' });
+        } finally {
+                await pool.end();
+        }
+});
 
 app.post('/handle', cors(corsOptions), (request,response) => {
 
