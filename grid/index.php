@@ -1,0 +1,774 @@
+﻿<?php
+ 
+ /* ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+GRID PRODUÇÃO NOVO
+  */
+ 
+session_start();
+if((!isset ($_SESSION['login']) == true) and (!isset ($_SESSION['senha']) == true))
+{
+  unset($_SESSION['usuario']);
+  unset($_SESSION['senha']);
+  unset($_SESSION['cd_om']);
+  header('location:../login.php');
+  
+  }
+
+$login = $_SESSION['usuario'];
+$cd_om = $_SESSION['cd_om'];
+
+
+function base64_url_decode($input)
+
+        {
+
+          return base64_decode(strtr($input, '-_,', '+/='));
+
+       }
+
+
+?>
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Integração PagTesouro</title>
+<link rel="icon" type="../styles/image/logomarca_mb.png" href="../style/images/logomarca_mb.png">
+<link rel="stylesheet" type="text/css" href="../style/images/bg.jpg">
+    <link rel="stylesheet" type="text/css" href="../style/kendo.ui.2014.2.716/styles/web/kendo.blueopal.css">
+    <link rel="stylesheet" type="text/css" href="../style/kendo.ui.2014.2.716/styles/web/kendo.common.min.css">
+    <link rel="stylesheet" type="text/css" href="../style/view.css/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="../style/view.css/bootstrap/css/bootstrap-theme.min.css">	
+<link rel="stylesheet" type="text/css" href="../style/view.css/bootstrap/css/view2.css">
+
+    <link rel="stylesheet" type="text/css" href="../style/view.css/glyphicons/css/glyphicons.min.css">
+    <script type="text/javascript" src="../style/kendo.ui.2014.2.716/js/jquery.min.js"></script>
+    <script type="text/javascript" src="../style/kendo.ui.2014.2.716/js/kendo.all.min.js"></script>
+    <script type="text/javascript" src="../style/kendo.ui.2014.2.716/js/cultures/kendo.culture.pt-BR.min.js"></script>
+    <script type="text/javascript" src="../style/view.css/bootstrap/js/bootstrap.min.js"></script>	
+	<script type="text/javascript" src="../style/view.css/bootstrap/js/objectexporter.min.js"></script>
+	<script type="text/javascript" src="../style/view.css/bootstrap/js/xlsx.full.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1 maximum-scale=1 minimum-scale=1" />
+    <link rel="stylesheet" href="jqwidgets/styles/jqx.base.css" type="text/css" />
+
+    <link rel="stylesheet" href="jqwidgets/styles/jqx.energyblue.css" type="text/css" />	
+
+    <script type="text/javascript" src="scripts/jquery-1.11.1.min.js"></script>  
+    <script type="text/javascript" src="jqwidgets/jqxcore.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxbuttons.js"></script>
+	<script type="text/javascript" src="jqwidgets/jqxdata.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxscrollbar.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxmenu.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxcheckbox.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxlistbox.js"></script>
+	<script type="text/javascript" src="jqwidgets/jqxdropdownlist.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxgrid.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxgrid.pager.js"></script>
+    <script type="text/javascript" src="jqwidgets/jqxgrid.selection.js"></script>	
+    <script type="text/javascript" src="jqwidgets/jqxgrid.sort.js"></script>	
+	<script type="text/javascript" src="jqwidgets/jqxdata.js"></script>	
+    <script type="text/javascript" src="jqwidgets/jqxdata.export.js"></script>	
+    <script type="text/javascript" src="jqwidgets/jqxgrid.export.js"></script>	
+	<script type="text/javascript" src="jqwidgets/jqxgrid.edit.js"></script>
+	<script type="text/javascript" src="jqwidgets/jqxnumberinput.js"></script>	
+	<script type="text/javascript" src="jqwidgets/jqxgrid.filter.js"></script>	
+	<script type="text/javascript" src="jqwidgets/jqxgrid.columnsresize.js"></script>		 
+	<script type="text/javascript" src="jqwidgets/jqxcalendar.js"></script>	
+	<script type="text/javascript" src="jqwidgets/jqxdatetimeinput.js"></script>	
+	
+	<script type="text/javascript" src="../style/view.css/bootstrap/js/jquery.mask.min.js"></script>	
+	<script type="text/javascript" src="../js/axios.min.js"></script>
+	
+	
+<style type="text/css">
+ .overlay{
+    position: fixed;
+	display: none;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    top: 0%;
+    left: 0px;
+    opacity: 0.5;
+    filter: alpha(opacity=50);
+	background-color: rgba(0,0,0,0.5); /* Black background with opacity */
+	cursor: pointer; /* Add a pointer on hover */
+ }</style>
+
+	 	
+    <script type="text/javascript">
+	
+	var hmg_ender = 'https://pagtesourohmg.dgom.mb:3000/';
+	//CONFIGURAÇÃO DOS AMBIENTES	
+	
+	var prd_ender = 'https://pagtesouro.dgom.mb:3000/';
+	var ender;	
+	ender = prd_ender;
+	
+	function atualiza_situacao(rowdata){
+		//console.log(rowdata);
+		
+		if ((rowdata["ds_situacao"] == "CRIADO" ||  rowdata["ds_situacao"] == "SUBMETIDO" || rowdata["ds_situacao"] == "CONCLUIDO" || rowdata["ds_situacao"] == "INICIADO") && (rowdata["ds_tp_pgto"] != "BOLETO") ){
+			console.log(rowdata["singra_ok"]);
+			if (rowdata["singra_ok"] == 0) {
+				//FUNÇÃO PARA SOLICITAR ATUALIZAÇÃO DE STATUS DE PAGAMENTO 
+					var atu = {id_pgto: rowdata["id_pgto"], cd_cpf: rowdata["cd_cpf"], cat_servico: rowdata["cat_servico"]};
+					document.getElementById('spinner').style.display = 'block';
+					 //fazendo post request  
+					 //console.log(atu);
+					axios.post(ender + 'update', atu).then((response) => {
+						
+						//console.log(response.data);	
+
+						resp = response.data;
+						
+						
+						
+								
+							$("#jqxgrid").jqxGrid('updatebounddata', 'data');									
+							document.getElementById('spinner').style.display = 'none';
+							
+							if (resp[0] == "1 fail") alert ("Registro atualizado, mas o SINGRA respondeu com erro. Mensagem: " + resp[1]);
+							if (resp[0] == "1 ok") alert ("Atualização e Comunicação com o SINGRA feita com sucesso!");
+							if (resp[0] == "0") alert ("Registro atualizado, mas o SINGRA não respondeu. Mensagem: " + resp[1]);
+							
+					} , (error) => {
+						alert(error);
+						});
+			} else {
+			alert ("O SINGRA já contabilizou este pedido. Não é possível solicitar novamente.");	
+			}
+		} else {
+			
+			alert ("Só é possível atualizar situações PENDENTES e que não sejam do tipo BOLETO!");
+		}
+		
+	}
+		
+	$(document).ready(function () {  
+			
+			if ("<?php echo $cd_om ?>" == "PAPEM" || "<?php echo $cd_om ?>" == "64200" ) {
+				
+				modelodados = [
+				{ name: 'id_pgto', type: 'string'},
+				{ name: 'ds_servico', type: 'string'},	
+				{ name: 'cd_referencia', type: 'string'},
+				{ name: 'cat_servico', type: 'string'},
+				{ name: 'nome', type: 'string'},
+				{ name: 'cd_cpf', type: 'string'},
+				{ name: 'ds_situacao', type: 'string'},
+				{ name: 'dt_situacao', type: 'date'},
+				{ name: 'ds_tp_pgto', type: 'number'},
+				{ name: 'vr_principal', type: 'number'},
+				{ name: 'vr_pago', type: 'number'},
+				{ name: 'ds_obs', type: 'string'},
+				{ name: 'cd_om', type: 'string'},
+				{ name: 'cod_rubrica', type: 'string'},
+				{ name: 'nome_rubrica', type: 'string'},
+				{ name: 'motivo', type: 'string'},
+				{ name: 'tributavel', type: 'string'},
+				{ name: 'nome_oc', type: 'string'},
+				{ name: 'vr_bruto_ex_ant', type: 'number'},
+				{ name: 'vr_ex_atu', type: 'number'},
+				{ name: 'natdev', type: 'string'},
+				{ name: 'cod_siapenip', type: 'string'},
+				{ name: 'cod_oc', type: 'string'},
+				{ name: 'cod_om', type: 'string'},
+				{ name: 'competencia', type: 'string'},
+				{ name: 'singra_ok', type: 'number'}
+						
+				
+			];
+				
+			} else {
+				
+				modelodados = [
+				{ name: 'id_pgto', type: 'string'},
+				{ name: 'ds_servico', type: 'string'},	
+				{ name: 'cd_referencia', type: 'string'},
+				{ name: 'cat_servico', type: 'string'},
+				{ name: 'nome', type: 'string'},
+				{ name: 'cd_cpf', type: 'string'},
+				{ name: 'ds_situacao', type: 'string'},
+				{ name: 'dt_situacao', type: 'date'},
+				{ name: 'ds_tp_pgto', type: 'number'},
+				{ name: 'vr_principal', type: 'number'},
+				{ name: 'vr_pago', type: 'number'},
+				{ name: 'ds_obs', type: 'string'},
+				{ name: 'singra_ok', type: 'number'}
+							
+			];
+			}
+			
+		    var source =  {
+			datatype: "json",
+            datafields:  modelodados,
+            cache: false,
+	        url: 'data2.php',
+			
+			updaterow: function (rowid, rowdata, commit) {
+				
+				//colocando overlay
+				document.getElementById('spinner').style.display = 'block';
+				
+				//ajax
+				var data = "update=true&dados=" + JSON.stringify(rowdata);
+                  //console.log(data);
+                  $.ajax({
+                    dataType: 'json',
+                    url: 'data2.php',
+                    cache: false,
+					method: 'POST',
+                    data: data,
+                    success: function (data, status, xhr) {      // update command is executed.
+						
+						commit(true);						
+					
+						$("#jqxgrid").jqxGrid('updatebounddata', 'data');
+						
+                    },
+                  error: function(jqXHR, textStatus, errorThrown)
+                {
+                  alert("Erro: " + errorThrown + ". Registro não foi atualizado.");
+				  commit(false);
+                }
+                });
+				
+				},
+			addrow: function (rowid, rowdata, position, commit) {
+				
+			},
+			deleterow: function (rowid, commit) {
+				
+			},
+			type: "POST",
+		    root: 'Rows',
+			beforeprocessing: function(data)
+		    {		    	
+				source.totalrecords = data[0].TotalRows;
+				//console.log (data[0].TotalRows);
+				
+		    },
+			sort: function()
+			{				
+					
+					$("#jqxgrid").jqxGrid('updatebounddata', 'sort');								
+			 }
+		};	
+			
+		var dataAdapter = new $.jqx.dataAdapter(source, 
+        {
+			formatData: function (data) {
+				$.extend(data, {
+					//cd_om: "<?php echo $cd_om ?>"
+					
+					
+				});    
+				//console.log(data);
+				return data;
+			}
+		});
+							
+		var cellsrenderer = function (row, columnfield, value, defaulthtml, columnproperties) {
+                switch (value) {
+                    case "CRIADO":                        
+                            return '<center><span style="margin: 4px; float: ' + columnproperties.cellsalign + '; text-shadow: 1px 1px 0px #000000; color: #FF8C17; text-align: center; font-size: 16px; font-weight: bold;">' + value + '</span></center>';
+							break;
+					 case "INICIADO":                        
+                            return '<center><span style="margin: 4px; float: ' + columnproperties.cellsalign + '; text-shadow: 1px 1px 0px #000000; color: #FF8C17; text-align: center; font-size: 16px;font-weight: bold;">' + value + '</span></center>';
+							break;	
+					 case "SUBMETIDO":                        
+                            return '<center><span style="margin: 4px; float: ' + columnproperties.cellsalign + '; text-shadow: 1px 1px 0px #000000; color: #FF8C17; text-align: center; font-size: 16px;font-weight: bold;">' + value + '</span></center>';
+							break;
+					 case "REJEITADO":                        
+                            return '<center><span style="margin: 4px; float: ' + columnproperties.cellsalign + '; text-shadow: 1px 1px 0px #000000; color: #FF0000; text-align: center; font-size: 16px;font-weight: bold;">' + value + '</span></center>';
+							break;
+					 case "CANCELADO":                        
+                            return '<center><span style="margin: 4px; float: ' + columnproperties.cellsalign + '; text-shadow: 1px 1px 0px #000000; color: #FF0000; text-align: center; font-size: 16px;font-weight: bold;">' + value + '</span></center>';
+							break;
+					 case "CONCLUIDO":                        
+                            return '<center><span style="margin: 4px; float: ' + columnproperties.cellsalign + '; text-shadow: 1px 1px 0px #000000; color: #21B717; text-align: center; font-size: 16px;font-weight: bold;">' + value + '</span></center>';
+							break;
+                }	
+            }
+			
+		var tribrenderer = function (row, columnfield, value, defaulthtml, columnproperties) {
+                if (value == 0) return "Não"; else return "Sim";	
+            }
+					// TEMA
+		var theme = 'energyblue'; 
+		colunasgrid = [];
+		if ("<?php echo $cd_om ?>" != "PAPEM" && "<?php echo $cd_om ?>" !== "64200" ) {
+		
+			colunasgrid = [
+				 { text: 'Atualizar', datafield: 'gerar', editable: false, columntype: 'button', width: 80, cellsrenderer: function () {return '...';}, 
+					buttonclick: function (row) { 
+						//console.log($("#jqxgrid").jqxGrid('getrowdata', row)["cod_pedido"]);
+						//document.form1.cd_agreg_meta.value = $("#jqxgrid").jqxGrid('getrowdata', row)["cd_agreg_meta"];
+						//document.form1.submit();
+						atualiza_situacao($("#jqxgrid").jqxGrid('getrowdata', row))
+					}},
+					
+				{ text: 'Comprovante', datafield: 'gerarPDF', editable: false, columntype: 'button', width: 100, cellsrenderer: function () {return '...';}, 
+					buttonclick: function (row) { 
+					
+						if ($("#jqxgrid").jqxGrid('getrowdata', row)["ds_situacao"] == "CONCLUIDO") {
+												document.form1.id_pgto.value = '['+JSON.stringify($("#jqxgrid").jqxGrid('getrowdata', row)["id_pgto"])+']';
+												document.form1.action = "../pdf2/exibepdf.php";
+												document.form1.submit();
+						} else {
+							alert ("O comprovante não pode ser gerado em pedidos onde o pagamento não foi efetuado.");
+						}
+					}},
+
+					
+				{ text: 'id_pgto', width: 150, datafield: 'id_pgto',editable: false, hidden: true},  
+				{ text: 'SINGRA OK?', width: 100, datafield: 'singra_ok',editable: false, hidden: ("<?php echo $cd_om ?>" != "71200")},
+				{ text: 'Serviço',  width: 200,editable: false,  datafield: 'ds_servico'},
+				{ text: 'Referência', datafield: 'cd_referencia', editable: false,width: 170},
+				{ text: 'Situação', datafield: 'ds_situacao',editable: false, filtertype: 'checkedlist', width: 120, cellsrenderer: cellsrenderer},
+				{ text: 'Data Situação', datafield: 'dt_situacao',editable: false, filtertype: 'date', width: 170, cellsformat: "dd/MM/yyyy - HH:mm:ss"},
+				{ text: 'Nome Contribuinte',  width: 200,editable: false,  datafield: 'nome'},
+				{ text: 'CPF', datafield: 'cd_cpf',editable: false, width: 100},				
+				{ text: 'Tipo Pagamento', datafield: 'ds_tp_pgto',editable: false,filtertype: 'checkedlist', width: 150 },
+				{ text: 'Valor Principal', datafield: 'vr_principal',editable: false, width: 150, cellsFormat: 'd2'},
+				{ text: 'Valor PagTesouro', datafield: 'vr_pago',editable: false, width: 150, cellsFormat: 'd2'},
+				{ text: 'Observação',  width: 300, editable: true, datafield: 'ds_obs'}
+                ]
+				
+		} else {
+			
+			colunasgrid = [
+				 { text: 'Atualizar', datafield: 'gerar', editable: false, columntype: 'button', width: 80, cellsrenderer: function () {return '...';}, 
+					buttonclick: function (row) { 
+						//console.log($("#jqxgrid").jqxGrid('getrowdata', row)["cod_pedido"]);
+						//document.form1.cd_agreg_meta.value = $("#jqxgrid").jqxGrid('getrowdata', row)["cd_agreg_meta"];
+						//document.form1.submit();
+						atualiza_situacao($("#jqxgrid").jqxGrid('getrowdata', row))
+					}},
+					
+				{ text: 'Comprovante', datafield: 'gerarPDF', editable: false, columntype: 'button', width: 90, cellsrenderer: function () {return '...';}, 
+					buttonclick: function (row) { 
+					
+						if ($("#jqxgrid").jqxGrid('getrowdata', row)["ds_situacao"] == "CONCLUIDO") {
+												document.form1.id_pgto.value = '['+JSON.stringify($("#jqxgrid").jqxGrid('getrowdata', row)["id_pgto"])+']';
+												document.form1.action = "../pdf2/exibepdf.php";
+												document.form1.submit();
+						} else {
+							alert ("O comprovante não pode ser gerado em pedidos onde o pagamento não foi efetuado.");
+						}
+					}},
+
+					
+				{ text: 'id_pgto', width: 150, datafield: 'id_pgto',editable: false, hidden: true},  
+				{ text: 'SINGRA OK?', width: 100, datafield: 'singra_ok',editable: false, hidden: true},
+				{ text: 'Serviço',  width: 200,editable: false,  datafield: 'natdev'},
+				{ text: 'Referência', datafield: 'cd_referencia', editable: false,width: 170},
+				{ text: 'Situação', datafield: 'ds_situacao',editable: false, filtertype: 'checkedlist', width: 120, cellsrenderer: cellsrenderer},
+				{ text: 'Data Situação', datafield: 'dt_situacao',editable: false, filtertype: 'date', width: 170, cellsformat: "dd/MM/yyyy - HH:mm:ss"},
+				{ text: 'Nome Contribuinte',  width: 200,editable: false,  datafield: 'nome'},
+				{ text: 'CPF', datafield: 'cd_cpf',editable: false, width: 100},				
+				{ text: 'Tipo Pagamento', datafield: 'ds_tp_pgto',editable: false,filtertype: 'checkedlist', width: 120 },
+				{ text: 'Valor Principal', datafield: 'vr_principal',editable: false, width: 120, cellsFormat: 'd2'},
+				{ text: 'Valor PagTesouro', datafield: 'vr_pago',editable: false, width: 120, cellsFormat: 'd2'},
+				{ text: 'Cód. Rubrica', datafield: 'cod_rubrica',editable: false, width: 100},
+				{ text: 'Nome Rubrica', datafield: 'nome_rubrica',editable: false, width: 100},
+				{ text: 'Motivo', datafield: 'motivo',editable: false, width: 150},
+				{ text: 'Tributável', datafield: 'tributavel',editable: false, width: 80,cellsrenderer: tribrenderer},			
+				{ text: 'Sigla OM', datafield: 'cd_om',editable: false, width: 50},
+				{ text: 'Cód. OM', datafield: 'cod_om',editable: false, width: 50},
+				{ text: 'Sigla OC', datafield: 'nome_oc',editable: false, width: 50},
+				{ text: 'Cód. OC', datafield: 'cod_oc',editable: false, width: 50},
+				{ text: 'NIP/SIAPE', datafield: 'cod_siapenip',editable: false, width: 80},
+				{ text: 'Valor Bruto Ex. Ant', datafield: 'vr_bruto_ex_ant',editable: false, width: 120, cellsFormat: 'd2'},				
+				{ text: 'Valor Ex. Atual', datafield: 'vr_ex_atu',editable: false, width: 120, cellsFormat: 'd2'},				
+				{ text: 'Observação',  width: 150, editable: true, datafield: 'ds_obs'}
+                ]
+		}
+				
+		// initialize jqxGrid
+		$("#jqxgrid").jqxGrid(
+		{
+			width: '100%',
+            source: dataAdapter, 
+			showeverpresentrow: false,
+			everpresentrowposition: "top",
+			everpresentrowactions: "add reset",
+			//altrows: true,
+			theme: theme,
+			filterable: true,
+            filtermode: 'default',
+			showfilterrow: true,
+			autoheight: true,
+			columnsresize: true,
+			sortable: true,			
+			virtualmode: false,
+			pagesizeoptions:['10', '30', '50', '100', '500'],
+			pageable: true,
+			editable: true,
+			localization: {
+                    addrowstring: "Incluir",
+                    udpaterowstring: "Atualizar",
+                    deleterowstring: "Delete",
+                    resetrowstring: "Cancelar",
+                    everpresentrowplaceholder: "--"
+                },
+			selectionmode: 'singlerow',							
+			rendergridrows: function(params)			
+			{
+				return params.data;
+			},
+			
+			
+            columns: colunasgrid
+		});
+	
+		
+		$("#jqxgrid").bind('bindingcomplete', function (event) {
+				$("#jqxgrid").jqxGrid('localizestrings', localizationobj);		
+				document.getElementById('spinner').style.display = 'none';				
+			});
+		
+		
+		let formatter = new Intl.NumberFormat([], {
+			style: 'currency',
+			currency: 'BRL'
+		})
+		
+		
+		
+				
+		$("#excelExport").css('display', 'inline-block');
+		$("#excelExport").jqxButton();
+/* 		$("#geraPDF").css('display', 'inline-block');
+		$("#geraPDF").jqxButton(); */		
+		
+		$("#updaterow").jqxButton();
+		$("#deleterow").jqxButton();
+		
+		// update row.
+            $("#updaterow").bind('click', function () {
+                  
+            });
+			
+			// delete row			
+			$("#deleterow").bind('click', function () {
+			});
+			
+			$("#excelExport").click(function() 
+			
+			{
+		
+				
+				document.getElementById('spinner').style.display = 'block';	
+				
+					//console.log(result); // Code depending on result
+					//dados = JSON.parse(result);
+					
+					const dados = [];
+					dataAdapter.records.forEach(val => dados.push(Object.assign({}, val)));
+					
+					//console.log(dados);
+
+					dados.forEach( object => { 
+					
+					delete object['boundindex'];
+					delete object['uid'];
+					delete object['visibleindex'];
+					delete object['uniqueid'];
+								
+					
+					});
+					
+					console.log(dados);
+					
+					if ("<?php echo $cd_om ?>" != "PAPEM" && "<?php echo $cd_om ?>" !== "64200" ) {
+					var headers = ['ID PAGAMENTO','SERVIÇO','REFERËNCIA','CATEGORIA','CONTRIBUINTE','CPF CONTRIBUINTE','SITUAÇÃO','DATA SITUAÇÃO','MODALIDADE','VALOR PRINCIPAL','VALOR PAGTESOURO','OBSERVAÇÃO'];
+					} else {
+					var headers = ['ID PAGAMENTO','SERVIÇO','REFERËNCIA','CATEGORIA','CONTRIBUINTE','CPF CONTRIBUINTE','SITUAÇÃO','DATA SITUAÇÃO','MODALIDADE','VALOR PRINCIPAL','VALOR PAGTESOURO','CÓD.RUBRICA','NOME RUBRICA', 'MOTIVO', 'TRIBUTÁVEL','SIGLA OM','COD OM','SIGLA OC','COD OC','NIP/SIAPE','VALOR BRUTO','OBSERVAÇÃO'];
+					}
+					
+					headers = [headers];
+					
+					filename = 'PagTesouro_Export.xlsx';
+					var ws = XLSX.utils.json_to_sheet(dados, { origin: 'A1',  skipHeader: false, type:'buffer' });
+					//var ws = XLSX.utils.json_to_sheet(dados, { origin: 'A2',  skipHeader: true, type:'buffer' });
+					//XLSX.utils.sheet_add_aoa(ws,headers,{origin: "A1"});
+					//XLSX.utils.sheet_add_aoa(ws,{origin: "A1"});
+								/*
+					  ws: worksheet object
+					  C: 0-based index of the column you want to change, C = 1 means column "B"
+					  Z: number format string
+					*/
+					function sheet_set_column_format(ws, C, Z) {
+					  var range = XLSX.utils.decode_range(ws["!ref"]);
+					  /* this loop starts on the second row, as it assumes the first row is a header */
+					  for(var R = range.s.r + 1; R <= range.e.r; ++R) {
+						var cell = ws[XLSX.utils.encode_cell({r:R,c:C})];
+						if(!cell) continue;
+						cell.t = 'n';
+						cell.z = Z;
+						
+					  }
+					}
+					
+					sheet_set_column_format(ws, 9, "#,##0.00");
+					sheet_set_column_format(ws, 10, "#,##0.00");
+					
+					
+					
+					
+					var wb = XLSX.utils.book_new();
+					XLSX.utils.book_append_sheet(wb,ws,"PagTesouro");
+					XLSX.writeFile(wb, filename);
+										
+					//alert ("Download efetuado");
+					
+					document.getElementById('spinner').style.display = 'none';	
+				      
+				
+				
+						
+			}
+			
+			);
+			
+			
+			
+			/* function export_velho() {
+			// console.log( $("#jqxgrid").jqxGrid('getrowdata', $('#jqxgrid').jqxGrid('selectedrowindexes'))["cod_pedido"] );
+            //$("#jqxgrid").jqxGrid('exportdata', 'xls', 'prioriza',true,null,true);          
+			//console.log (dataAdapter.records)
+				//console.log (Object.keys(dataAdapter.records[0]))
+					
+			const dados = [];
+			dataAdapter.records.forEach(val => dados.push(Object.assign({}, val)));
+						
+			dados.forEach(atu_dados);
+			//console.log(dados);
+			function atu_dados(item, index) {
+				item.cd_referencia = '="' + item.cd_referencia + '"' ;
+				item.cd_cpf = '="' + item.cd_cpf + '"' ;
+				item.vr_principal = item.vr_principal.toString().replace('.',',');				
+				if (item.vr_pago) item.vr_pago = item.vr_pago.toString().replace('.',',');				
+			}
+				
+				var headers = [];
+				for (var k = 0; k < $("#jqxgrid").jqxGrid('columns').records.length; k++) {
+					headers.push({
+					  alias: $("#jqxgrid").jqxGrid('columns').records[k].text,
+					  name: $("#jqxgrid").jqxGrid('columns').records[k].datafield,
+					  flex: 1
+					});
+				}
+				
+			//	console.log (headers);
+				
+				 objectExporter({
+					exportable: dados, // The dataset to be exported form an array of objects, it can also be the DOM name for exporting DOM to html
+					type: "xls", // The type of exportable e.g. csv, xls or pdf
+					headers: headers,
+					fileName: "export", // The name of the file which will be exported without the extension.
+					headerStyle: "font-size:16px; font-weight:bold;", // The style which needs to be applied to the column headers
+					cellStyle: "font-size:14px;", // The style which needs to be applied to each of the cells excluding the headers
+					sheetName: "Planilha 1", // The sheet name containing the exported exportables
+					documentTitle: "Extração PAGTESOURO", // The document title which should be added to the printable
+					documentTitleStyle: "font-size:20px; font-weight:bold;" // The style which can be applied to the document header					
+				}) 	
+            } */
+						
+			
+			
+	
+		
+	});
+    
+    var editedRows = new Array();	
+	var cellclass = function (row, datafield, value, rowdata) {
+		for (var i = 0; i < editedRows.length; i++) {
+			if (editedRows[i].index == row) {
+				return "editedRow";
+			}
+		}
+	}
+     
+	  
+	  //$("#jqxgrid").on('cellclick', function (event) {
+                //alert(event.args.rowindex);
+				//console.log(source);
+            //});
+
+			
+			
+			
+			
+			/* $("#geraPDF").click(function () {
+			  // console.log( $("#jqxgrid").jqxGrid('getrowdata', $('#jqxgrid').jqxGrid('selectedrowindexes'))["cod_pedido"] );
+			  
+			  var getselectedrowindexes = $('#jqxgrid').jqxGrid('getselectedrowindexes');
+			  
+                if (getselectedrowindexes.length > 0)
+                {
+					var selectedRowData = [];
+					
+                   	getselectedrowindexes.forEach(function (item,indice,array){
+						selectedRowData.push($('#jqxgrid').jqxGrid('getrowdata', item)["cod_pedido"]   );						
+					});			
+					
+					documeSnt.form1.cod_pedido.value = JSON.stringify(selectedRowData);
+					document.form1.submit();
+                } 
+			}); */
+            
+            
+			//tradução
+			var localizationobj = {};
+			localizationobj.pagergotopagestring = "Ir para página:";
+			localizationobj.pagershowrowsstring = "Quantidade de Registros:";
+      localizationobj.pagerrangestring = " de ";
+      localizationobj.pagernextbuttonstring = "Próxima página";
+      localizationobj.pagerpreviousbuttonstring = "Página Anterior";
+      localizationobj.sortascendingstring = "Classificar em ordem crescente";
+      localizationobj.sortdescendingstring = "Classificar em ordem descrescente";
+			localizationobj.emptydatastring = "Nenhum dado para apresentar.";
+      localizationobj.sortremovestring = "Remover classificação";
+      localizationobj.firstDay = 1;
+      localizationobj.percentsymbol = "%";
+      localizationobj.currencysymbol = "R$";
+      localizationobj.currencysymbolposition = "before";
+      localizationobj.decimalseparator = ",";
+      localizationobj.thousandsseparator = ".";
+			localizationobj.filterclearstring = "Limpar";
+			localizationobj.filterstring = "Filtrar";
+			localizationobj.filtershowrowstring = "Mostrar somente:";
+			localizationobj.filtershowrowdatestring = "Mostrar por data:";
+			localizationobj.filterorconditionstring = "Ou";
+			localizationobj.filterandconditionstring = "E";
+			localizationobj.filterselectallstring = "(Selecionar Todos)";
+			localizationobj.filterchoosestring = "Escolha:";
+			localizationobj.filterstringcomparisonoperators = ['vazio', 'não vazio', 'contém', 'contém(aprox.)',
+																'não contém', 'não contém(aprox.)', 'inicia com', 'inicia com(aprox.)',
+																'acaba com', 'acaba com(aprox.)', 'igual', 'igual(aprox.)', 'nulo', 'não nulo'],
+			localizationobj.filternumericcomparisonoperators = ['equal', 'not equal', 'less than', 'less than or equal', 'greater than', 'greater than or equal', 'null', 'not null'],
+			localizationobj.filterdatecomparisonoperators =  ['equal', 'not equal', 'less than', 'less than or equal', 'greater than', 'greater than or equal', 'null', 'not null'],
+			localizationobj.filterbooleancomparisonoperators =  ['equal', 'not equal'],
+			localizationobj.validationstring =  "Entered value is not valid",
+			localizationobj.emptydatastring =  "Sem dados a exibir",
+			localizationobj.filterselectstring =  "Filtrar",
+			localizationobj.loadtext =  "Carregando...",
+			localizationobj.clearstring =  "Limpar",
+			localizationobj.todaystring =  "Hoje" 
+	
+			var days = { // full day names
+									names: ["Domingo", "Segunda-Feira", "Terça-Feira", "Quarta-Feira", "Quinta-Feira", "Sexta-Feira", "Sábado"],
+                // abbreviated day names
+                namesAbbr: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"],
+                // shortest day names
+                namesShort: ["Do", "Se", "Te", "Qa", "Qi", "Sx", "Sb"]
+								};
+            		localizationobj.days = days;
+            
+			var months = {// full month names (13 months for lunar calendards -- 13th month should be "" if not lunar)
+                names: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro", ""],
+                // abbreviated month names
+                namesAbbr: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez", ""]
+            		};
+            		localizationobj.months = months;
+    	
+    </script>
+</head>
+
+<body>
+	<div class = "overlay" id="spinner">
+		<div class="d-flex justify-content-center" >
+			<div class="spinner-border" role="status" style="width: 5rem; height: 5rem; z-index: 20; margin-top: 200px;"><span class="sr-only"></span>
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid" style="margin-top: 5px">
+		<div class="card card-primary">
+			<div class="new-card-header">
+				<div class="row">
+					<div class="column" style="width:10%; height:85px; float: left;" >
+					<center><img src="../style/images/logomarca_mb.png" alt="Distintivo MB" title="Distintivo MB" style="width:80px; height:80px;"></center>
+           </div>
+            
+	<div class="column" style="width:80%; height:77px; float: center;">
+  <h4>
+  	<center>
+			<label class="marinha">
+<!-- <label style="text-shadow: 2px 2px 2px rgba(50, 50, 50, 1);"> -->
+			<b>MARINHA DO BRASIL</b>
+										<br>
+                    <br>
+				INTEGRAÇÃO PAGTESOURO
+			</label>
+    </center>
+  </h4>
+  </div>
+  </div>
+  </div>
+
+		<nav class="navtop">
+			<div style="margin-top:8px;margin-left:15px; font-family:sans-serif">
+				Usuário: <?php echo $login ?><a href="/pagtesouro/logout.php"><img src="../style/images/sair.png" width ="35" height="35" styles="vertical-align:middle;margin:10px 10px"></a>
+			</div>
+		</nav>
+		
+		<br>
+		<center>
+			<h2><b> Visão UG <?php echo $cd_om ?> </b></h2> 
+		</center>
+		
+
+		<div class="card-body">
+			<center>
+		  		<div class="card panel-info">
+						<div class="card-body" style="border-color: #99ccff; border-style: solid; border-width: 1px 1px;">
+
+
+			  			<div id='jqxWidget'>
+								<div id='jqxgrid'>
+					</div>
+			</div> 
+
+				<div style='margin-top: 20px;'>
+				<center>
+					<div >
+						<!--<input style="display: none" class="btn btn-primary" value="Exportar Planilha" id='excelExport' />				-->
+						<input style="margin-top: 10px" type="image" width="105px" height="auto" value="Exportar para Excel" alt="Exportar XLSX" src="../style/images/exportar_xlsx.png" id='excelExport'/>
+
+						<input style="display: none" class="btn btn-primary" value="Atualizar Registros" id='updaterow' name='updaterow'  />
+						<input style="display: none" class="btn btn-primary" value="Apagar Registro" id='deleterow' name='deleterow' />
+						<form action="grid.php" target="_blank" method="post" name="form1" id="form1">
+						<input type="hidden" name="id_pgto" id="cd_agreg_meta">
+						<input type="hidden" class="btn btn-primary" name="Pesquisar" id="Pesquisar" value="Pesquisar" >
+						</form>
+					 </div>
+					 
+					 <div>
+						 <br><br>
+						 <center> <h4> <b> Orientações Gerais </b> </h4> </center>
+						 <br>
+						 
+						 <center> 1- As solicitações de pagamento estão ordenadas da mais recente para a mais antiga, por padrão. </center>  
+						 <center> 2- Ao clicar no botão "Atualizar" correspondente a uma solicitação, o PagTesouro será consultado sobre a situação da mesma. Apenas solicitações PENDENTES podem ser consultadas. </center>
+						 <center> 3- Ao clicar no botão "Comprovante" correspondente a uma solicitação com situação CONCLUÍDA, será gerado um arquivo PDF com as informações mais relevantes do pedido e do pagamento efetuado. </center> 
+						 <center> 4- Em caso de qualquer inconsistência, por favor entre em contato com a Assessoria do Plano Diretor da DGOM. </center> 
+						 
+					 </div>
+	</div>
+	</div>
+	</div>
+	</div>
+	</div>
+	</div>
+
+  </body>
+</html>
