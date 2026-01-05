@@ -121,10 +121,10 @@
 - **Trecho:**
   ```js
   var hmg_proxy_aut = 'Basic MTU2NTgxMTk3NjY6QXBsaWNhc2lwbGEyMDIxQA==';
-  var tokenAcesso = "#";
-  var tokenAcessoCCCPM = "#";
-  var tokenAcessoCCCPM2 = "#";
-  var tokenAcessoPAPEM = "#";
+  var tokenAcesso = "xxxxx";
+  var tokenAcessoCCCPM = "xxxxxxxxxxxxxx";
+  var tokenAcessoCCCPM2 = "xxxxxxxxxxxxxx";
+  var tokenAcessoPAPEM = "xxxxxxxx";
   ```
 
 ## EV-12 — Credenciais de banco hardcoded
@@ -133,12 +133,12 @@
 - **Trecho:**
   ```js
   const pool = new Pool({
-    user: '#',
-    host: '#',
-    database: '#',
-    schema: '#',
-    password: '#',
-    port: '#'
+    user: 'xxxx',
+    host: 'xxxxx',
+    database: 'xxxx',
+    schema: 'xxxx',
+    password: 'xxxx',
+    port: 5432
   })
   ```
 
@@ -169,7 +169,7 @@
 - **Linhas:** 206–218
 - **Trecho:**
   ```js
-  key = Buffer.from("#",'utf8');
-  iv = Buffer.from('#','utf8');
-  var cipher = crypto.createCipheriv('#', key, iv);
+  key = Buffer.from("xxxxx",'utf8');
+  iv = Buffer.from('xxxxxxx','utf8');
+  var cipher = crypto.createCipheriv('aes-128-cbc', key, iv);
   ```
