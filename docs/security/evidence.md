@@ -138,7 +138,7 @@
     database: '#',
     schema: '#',
     password: '#',
-    port: 111111
+    port: '#'
   })
   ```
 
