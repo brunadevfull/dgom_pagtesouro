@@ -110,6 +110,46 @@ function base64_url_decode($input)
 	var ender;	
 	ender = prd_ender;
 	
+	function podeAtualizar(rowdata) {
+		return (rowdata["ds_situacao"] == "CRIADO" || rowdata["ds_situacao"] == "SUBMETIDO" || rowdata["ds_situacao"] == "CONCLUIDO" || rowdata["ds_situacao"] == "INICIADO") && rowdata["ds_tp_pgto"] != "BOLETO" && Number(rowdata["singra_ok"]) === 0;
+	}
+
+	async function atualizarPendentes() {
+		const linhas = $("#jqxgrid").jqxGrid('getrows') || [];
+		const pendentes = linhas.filter((rowdata) => podeAtualizar(rowdata));
+		if (pendentes.length === 0) {
+			alert("Nenhuma solicitação pendente de atualização ou elegível para consulta.");
+			return;
+		}
+
+		document.getElementById('spinner').style.display = 'block';
+		let atualizados = 0;
+		const avisos = [];
+
+		for (const rowdata of pendentes) {
+			const atu = {id_pgto: rowdata["id_pgto"], cd_cpf: rowdata["cd_cpf"], cat_servico: rowdata["cat_servico"]};
+			try {
+				const response = await axios.post(ender + 'update', atu);
+				const resp = response.data;
+				atualizados++;
+				if (resp[0] === "1 fail") avisos.push(`ID ${rowdata["id_pgto"]}: ${resp[1]}`);
+				if (resp[0] === "0") avisos.push(`ID ${rowdata["id_pgto"]}: ${resp[1] || 'SINGRA não respondeu'}`);
+			} catch (error) {
+				avisos.push(`ID ${rowdata["id_pgto"]}: ${error}`);
+			}
+		}
+
+		$("#jqxgrid").jqxGrid('updatebounddata', 'data');
+		document.getElementById('spinner').style.display = 'none';
+
+		let mensagem = `Atualizações enviadas: ${atualizados}/${pendentes.length}.`;
+		if (avisos.length > 0) {
+			console.log("Avisos ao atualizar pendentes:", avisos);
+			mensagem += ` Ocorreram ${avisos.length} avisos. Consulte o console para mais detalhes.`;
+		}
+		alert(mensagem);
+	}
+
 	function atualiza_situacao(rowdata){
 		//console.log(rowdata);
 		
@@ -149,7 +189,6 @@ function base64_url_decode($input)
 		}
 		
 	}
-		
 	$(document).ready(function () {  
 			
 			if ("<?php echo $cd_om ?>" == "PAPEM" || "<?php echo $cd_om ?>" == "64200" ) {
@@ -445,6 +484,7 @@ function base64_url_decode($input)
 				
 		$("#excelExport").css('display', 'inline-block');
 		$("#excelExport").jqxButton();
+		$("#atualizarPendentes").jqxButton();
 /* 		$("#geraPDF").css('display', 'inline-block');
 		$("#geraPDF").jqxButton(); */		
 		
@@ -537,6 +577,8 @@ function base64_url_decode($input)
 			}
 			
 			);
+
+			$("#atualizarPendentes").on('click', atualizarPendentes);
 			
 			
 			
@@ -743,6 +785,7 @@ function base64_url_decode($input)
 					<div >
 						<!--<input style="display: none" class="btn btn-primary" value="Exportar Planilha" id='excelExport' />				-->
 						<input style="margin-top: 10px" type="image" width="105px" height="auto" value="Exportar para Excel" alt="Exportar XLSX" src="../style/images/exportar_xlsx.png" id='excelExport'/>
+						<button style="margin-top: 10px" type="button" class="btn btn-primary" id="atualizarPendentes">Atualizar pendentes</button>
 
 						<input style="display: none" class="btn btn-primary" value="Atualizar Registros" id='updaterow' name='updaterow'  />
 						<input style="display: none" class="btn btn-primary" value="Apagar Registro" id='deleterow' name='deleterow' />
@@ -761,6 +804,7 @@ function base64_url_decode($input)
 						 <center> 2- Ao clicar no botão "Atualizar" correspondente a uma solicitação, o PagTesouro será consultado sobre a situação da mesma. Apenas solicitações PENDENTES podem ser consultadas. </center>
 						 <center> 3- Ao clicar no botão "Comprovante" correspondente a uma solicitação com situação CONCLUÍDA, será gerado um arquivo PDF com as informações mais relevantes do pedido e do pagamento efetuado. </center> 
 						 <center> 4- Em caso de qualquer inconsistência, por favor entre em contato com a Assessoria do Plano Diretor da DGOM. </center> 
+						 <center> 5- Utilize o botão "Atualizar pendentes" para consultar automaticamente todas as solicitações elegíveis em lote. </center>
 						 
 					 </div>
 	</div>
