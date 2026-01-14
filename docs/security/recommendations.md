@@ -5,7 +5,7 @@
 ## Quick wins (baixo esforço, alto impacto)
 1. **Remover segredos do código**
    - Eu recomendo substituir tokens, senhas e credenciais hardcoded por variáveis de ambiente ou secret manager.
-   - Rotacionar tokens já expostos no repositório.
+   - Rotacionar tokens que já vazaram no código.
 2. **Autenticar endpoints críticos**
    - Proteger `/handle` e `/update` com API key, JWT ou mTLS.
    - Restringir por IP/rede quando aplicável.
