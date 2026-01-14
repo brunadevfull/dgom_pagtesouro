@@ -1,6 +1,6 @@
 # Evidências de Código
 
-> Observação: eu tirei os trechos de `server.js` e `pgt.js` com base nas linhas exibidas durante a inspeção.
+> Observação: eu tirei os trechos de `server.js` com base nas linhas exibidas durante a inspeção.
 
 ## EV-01 — Tokens/segredos hardcoded (PagTesouro)
 - **Arquivo:** `server.js`
@@ -85,17 +85,7 @@
   var cipher = crypto.createCipheriv('aes-128-cbc', key, iv);
   ```
 
-## EV-08 — CORS permissivo/inconsistente
-- **Arquivo:** `server.js`
-- **Linhas:** 50–66
-- **Trecho:**
-  ```js
-  res.setHeader('Access-Control-Allow-Origin', '127.0.0.1');
-  ...
-  app.use(cors());
-  ```
-
-## EV-09 — Validação de entrada mínima
+## EV-08 — Validação de entrada mínima
 - **Arquivo:** `server.js`
 - **Linhas:** 181
 - **Trecho:**
@@ -103,73 +93,10 @@
   if (request.body.cnpjCpf == '') throw "Campo CPF vazio!";
   ```
 
-## EV-10 — Comentário sobre TLS inseguro
+## EV-09 — Comentário sobre TLS inseguro
 - **Arquivo:** `server.js`
 - **Linhas:** 399
 - **Trecho:**
   ```js
   //process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-  ```
-
----
-
-# Evidências adicionais (pgt.js)
-
-## EV-11 — Proxy auth e tokens hardcoded
-- **Arquivo:** `pgt.js`
-- **Linhas:** 67–78
-- **Trecho:**
-  ```js
-  var hmg_proxy_aut = 'Basic MTU2NTgxMTk3NjY6QXBsaWNhc2lwbGEyMDIxQA==';
-  var tokenAcesso = "#";
-  var tokenAcessoCCCPM = "#";
-  var tokenAcessoCCCPM2 = "#";
-  var tokenAcessoPAPEM = "#";
-  ```
-
-## EV-12 — Credenciais de banco hardcoded
-- **Arquivo:** `pgt.js`
-- **Linhas:** 128–135
-- **Trecho:**
-  ```js
-  const pool = new Pool({
-    user: '#',
-    host: '#',
-    database: '#',
-    schema: '#',
-    password: '#',
-    port: '#'
-  })
-  ```
-
-## EV-13 — Basic Auth hardcoded para SINGRA
-- **Arquivo:** `pgt.js`
-- **Linhas:** 365–374
-- **Trecho:**
-  ```js
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Basic ' + new Buffer.from('admin' + ':' + 'pwssingra').toString('base64')
-  },
-  ```
-
-## EV-14 — Logs de payload e dados criptografados
-- **Arquivo:** `pgt.js`
-- **Linhas:** 82–85 e 220–221
-- **Trechos:**
-  ```js
-  console.log(request.body);
-  ...
-  geralog("Nome criptografado: " + nome_encrypted);
-  geralog("CPF/CNPJ criptografado: " + cnpjCpf_encrypted);
-  ```
-
-## EV-15 — AES-CBC com IV fixo
-- **Arquivo:** `pgt.js`
-- **Linhas:** 206–218
-- **Trecho:**
-  ```js
-  key = Buffer.from("#",'utf8');
-  iv = Buffer.from('#','utf8');
-  var cipher = crypto.createCipheriv('#', key, iv);
   ```

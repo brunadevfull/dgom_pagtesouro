@@ -1,15 +1,15 @@
 # Relatório de Segurança (Análise Estática)
 
-> Eu escrevi este relatório no meu tom direto, como se fosse um registro pessoal do que eu vi no código.
+> Escrevi isso no meu tom direto, do jeito que eu registraria o que vi no código.
 
 ## 1. Escopo da Análise
-- **O que eu analisei:** o código dos serviços Node.js que cuidam dos endpoints e integrações externas (`server.js` e `pgt.js`) e o script auxiliar `papem_test.js`.
-- **O que eu não analisei:** execução do sistema, infraestrutura real (certificados, proxy, DB), configurações de ambiente em produção e dependências externas minificadas em `grid/`.
-- **Premissas que usei:** análise estritamente baseada no que está no repositório; o comportamento real pode variar conforme configurações externas.
+- **O que eu analisei:** o serviço Node.js que cuida dos endpoints e integrações externas (`server.js`) e o script auxiliar `papem_test.js`.
+- **O que eu não analisei:** execução do sistema, infraestrutura real (certificados, proxy, DB), configs de ambiente em produção e dependências externas minificadas em `grid/`.
+- **Premissas que usei:** análise baseada no que tá no sistema da RECIM; o comportamento real pode variar conforme configs externas.
 
 ## 2. Visão Geral de Segurança
 - **Nível geral de maturidade (na minha leitura):** **médio-baixo**.
-- **Principais superfícies de ataque que eu identifiquei:**
+- **Principais superfícies de ataque que eu vi:**
   - Endpoints expostos via Express (`/handle` e `/update`) sem autenticação explícita.
   - Integrações externas (PagTesouro, SINGRA) com credenciais em código.
   - Registro de dados sensíveis em logs.
@@ -19,14 +19,14 @@
 
 ### VULN-01 — Segredos hardcoded em código
 - **Categoria:** OWASP A02 – Cryptographic Failures / A07 – Identification and Authentication Failures
-- **Descrição técnica (em português claro):** tokens, credenciais de DB e Basic Auth estão embutidos no código-fonte.
+- **Descrição técnica (em português claro):** tokens, credenciais de DB e Basic Auth estão embutidos no código.
 - **Evidência:** ver `docs/security/evidence.md` (EV-01, EV-02, EV-03).
 - **Impacto:**
   - Confidencialidade: **Alta**
   - Integridade: **Alta**
   - Disponibilidade: **Média**
 - **Severidade:** **Alta**
-- **Cenário plausível (do jeito que eu vejo):** se alguém cair em cima do repositório/backup, já sai com tokens e credenciais na mão e consegue usar APIs e banco como quiser.
+- **Cenário plausível (do jeito que eu vejo):** se alguém cair em cima de um backup do sistema, já sai com tokens e credenciais na mão e consegue usar APIs e banco como quiser.
 - **Mitigação:**
   - Curto prazo: mover segredos para variáveis de ambiente/secret manager e rotacionar tokens.
   - Médio prazo: vault com rotação automática e políticas de menor privilégio.
@@ -74,15 +74,14 @@
   - Médio prazo: adotar AES-GCM/ChaCha20-Poly1305 e rotação de chaves.
 
 ## 4. Riscos Potenciais / Más Práticas
-- **CORS permissivo/inconsistente:** `Access-Control-Allow-Origin` é fixado, mas `app.use(cors())` sem restrições pode permitir origens indevidas (depende do deploy). Ver EV-08.
-- **Validação de entrada mínima:** apenas validação de CPF vazio; demais campos seguem direto para processamento/DB. Ver EV-09.
-- **Comentário de TLS inseguro:** existe instrução comentada para desabilitar validação TLS (`NODE_TLS_REJECT_UNAUTHORIZED`). Ver EV-10.
+- **Validação de entrada mínima:** só valida CPF vazio; o resto vai direto pro processamento/DB. Ver EV-08.
+- **Comentário de TLS inseguro:** tem instrução comentada pra desabilitar validação TLS (`NODE_TLS_REJECT_UNAUTHORIZED`). Ver EV-09.
 - **Ausência de rate limiting:** não há controle de volume de requisições (risco de abuso/DoS).
 
 ## 5. Segurança por Camada
 - **Autenticação:** ausente nos endpoints críticos (EV-04).
 - **Autorização:** sem controle por perfis/ownership.
-- **Validação de entrada:** mínima (EV-09).
+- **Validação de entrada:** mínima (EV-08).
 - **Criptografia e segredos:** chaves/IV fixos e segredos em código (EV-01, EV-07).
 - **Logs e dados sensíveis:** exposição de PII (EV-05, EV-06).
 - **Comunicação externa:** uso de tokens/Basic Auth hardcoded; validação TLS depende de configuração externa (EV-02, EV-03).
@@ -96,7 +95,7 @@
 - **Melhorias estruturais:**
   1. Adotar criptografia autenticada (AES-GCM/ChaCha20-Poly1305).
   2. Validar payloads via schema (ex.: Joi/Zod) e normalizar dados.
-  3. Restringir CORS por lista explícita de origens.
+  3. Restringir logs de PII e dados transacionais em ambientes não controlados.
 - **Dívida técnica:**
   1. Política de rotação de chaves/tokens e gestão centralizada.
   2. Monitoramento e rate limiting.
